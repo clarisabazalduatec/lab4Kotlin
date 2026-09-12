@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import mx.tec.sabores.data.RestaurantRepository
 import mx.tec.sabores.domain.RatingSummary
 import mx.tec.sabores.domain.Restaurant
+import mx.tec.sabores.domain.RestaurantEnLista
 import mx.tec.sabores.ui.components.ErrorView
 import mx.tec.sabores.ui.components.RestaurantCard
 import mx.tec.sabores.ui.state.UiState
@@ -23,35 +24,22 @@ import mx.tec.sabores.ui.theme.Lab2Theme
 
 @Composable
 fun RestaurantListScreen(
-    restaurants: List<Restaurant>,
-    summaryOf: (Int) -> RatingSummary,
-onRestaurantClick: (Int) -> Unit,
-modifier: Modifier = Modifier
+    restaurants: List<RestaurantEnLista>,
+    onRestaurantClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    when (val estado = viewModel.restaurantes) {
-        is UiState.Cargando -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-            CircularProgressIndicator()
-        }
-
-        is UiState.Error -> ErrorView(
-            mensaje = estado.mensaje,
-            onReintentar = { viewModel.cargarRestaurantes() }
-        )
-
-        is UiState.Exito -> LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(restaurants, key = { it.id }) { restaurant ->
-                RestaurantCard(
-                    restaurant = restaurant,
-                    summary = summaryOf(restaurant.id),
-                    onClick = { onRestaurantClick(restaurant.id) }
-                )
-            }
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(restaurants, key = { it.restaurant.id }) { item ->
+            RestaurantCard(
+                restaurant = item.restaurant,
+                summary = item.summary,
+                onClick = { onRestaurantClick(item.restaurant.id) }
+            )
         }
     }
 }
-
 
