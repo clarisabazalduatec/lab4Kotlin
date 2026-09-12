@@ -93,8 +93,9 @@ fun SaboresApp() {
                 val restaurant = viewModel.detalle?.restaurant ?: return@composable
                 MyReviewsScreen(items = viewModel.mias)
                 onSave = {
-                    // Todavía no guarda: publicar contra el servidor es el Bloque C.
-                    nav.popBackStack()
+                    // El popBackStack ya no es inmediato: ocurre cuando el servidor confirma.
+                    // Si falla, la pantalla se queda y el error se ve.
+                    formViewModel.publicar(id) { nav.popBackStack() }
                 }
             }
         }

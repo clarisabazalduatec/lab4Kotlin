@@ -16,7 +16,6 @@ import retrofit2.HttpException
 
 data class MyReviewItem(val restaurantName: String, val review: Review)
 
-/** El restaurante y sus reseñas, que la pantalla de detalle necesita juntos. */
 data class Detalle(
     val restaurant: Restaurant,
     val reviews: List<Review>
@@ -31,18 +30,33 @@ class SaboresViewModel(
     var restaurantes by mutableStateOf<UiState<List<RestaurantEnLista>>>(UiState.Cargando)
         private set
 
+    var detalle by mutableStateOf<UiState<Detalle>>(UiState.Cargando)
+        private set
+
+    var mias by mutableStateOf<List<MyReviewItem>>(emptyList())
+        private set
+
     init { cargarRestaurantes() }
 
     fun cargarRestaurantes() {
         viewModelScope.launch {
             restaurantes = UiState.Cargando
-            restaurantes = try {
-                UiState.Exito(repository.getAllForList())
-            } catch (e: IOException) {
-                UiState.Error("No hay conexión. Revisa tu internet.")
-            } catch (e: HttpException) {
-                UiState.Error("El servidor respondió ${e.code()}.")
-            }
+            restaurantes = pedir { repository.getAllForList() }
         }
+    }
+
+    fun cargarDetalle(id: Int) {
+        viewModelScope.launch {
+            detalle = UiState.Cargando
+            detalle = pedir { Detalle(repository.getById(id), repository.getReviews(id)) }
+        }
+    }
+
+    private suspend fun <T> pedir(block: suspend () -> T): UiState<T> = try {
+        UiState.Exito(block())
+    } catch (e: IOException) {
+        UiState.Error("No hay conexión. Revisa tu internet.")
+    } catch (e: HttpException) {
+        UiState.Error("El servidor respondió ${e.code()}.")
     }
 }

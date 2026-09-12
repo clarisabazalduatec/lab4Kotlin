@@ -14,7 +14,7 @@ import java.io.IOException
 
 data class NewReviewUiState(
     val stars: Int = 0,
-    val comment: String = "hola",
+    val comment: String = "",
     val guardando: Boolean = false,
     val errorAlGuardar: String? = null
 ) {
