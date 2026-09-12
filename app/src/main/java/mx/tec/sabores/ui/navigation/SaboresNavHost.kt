@@ -17,13 +17,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import mx.tec.sabores.ui.components.CargandoView
+import mx.tec.sabores.ui.components.ErrorView
 import mx.tec.sabores.ui.screens.MyReviewsScreen
 import mx.tec.sabores.ui.screens.RestaurantListScreen
 import mx.tec.sabores.ui.state.SaboresViewModel
 import mx.tec.sabores.ui.state.UiState
-import mx.tec.sabores.ui.components.ErrorView
-import mx.tec.sabores.ui.components.CargandoView
-
 
 @Composable
 fun SaboresApp() {
@@ -32,6 +31,7 @@ fun SaboresApp() {
     val backStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = MenuItem.entries.any { it.route == currentRoute }
+
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
@@ -59,6 +59,7 @@ fun SaboresApp() {
             startDestination = Route.HOME,
             modifier = Modifier.padding(padding)
         ) {
+            // ---- Lista de restaurantes ----
             composable(Route.HOME) {
                 when (val estado = viewModel.restaurantes) {
                     is UiState.Cargando -> CargandoView()
@@ -72,6 +73,8 @@ fun SaboresApp() {
                     )
                 }
             }
+
+            // ---- Detalle de un restaurante ----
             composable(
                 route = Route.DETAIL,
                 arguments = listOf(navArgument(Route.ARG_RESTAURANT_ID) { type = NavType.IntType })
@@ -79,26 +82,27 @@ fun SaboresApp() {
                 val id = entry.arguments?.getInt(Route.ARG_RESTAURANT_ID) ?: return@composable
 
                 LaunchedEffect(id) { viewModel.cargarDetalle(id) }
-                val detalle = viewModel.detalle ?: return@composable
 
-                RestaurantDetailScreen(
-                    restaurant = detalle.restaurant,
-                    summary = detalle.summary,
-                    reviews = detalle.reviews,
-                    onWriteReviewClick = { nav.navigate(Route.newReview(id)) },
-                    onBack = { nav.popBackStack() }
-                )
-            }
-            composable(Route.MY_REVIEWS) {
-                val restaurant = viewModel.detalle?.restaurant ?: return@composable
-                MyReviewsScreen(items = viewModel.mias)
-                onSave = {
-                    // El popBackStack ya no es inmediato: ocurre cuando el servidor confirma.
-                    // Si falla, la pantalla se queda y el error se ve.
-                    formViewModel.publicar(id) { nav.popBackStack() }
+                when (val estado = viewModel.detalle) {
+                    is UiState.Cargando -> CargandoView()
+                    is UiState.Error -> ErrorView(
+                        mensaje = estado.mensaje,
+                        onReintentar = { viewModel.cargarDetalle(id) }
+                    )
+                    is UiState.Exito -> RestaurantDetailScreen(
+                        restaurant = estado.datos.restaurant,
+                        summary = estado.datos.summary,
+                        reviews = estado.datos.reviews,
+                        onWriteReviewClick = { nav.navigate(Route.newReview(id)) },
+                        onBack = { nav.popBackStack() }
+                    )
                 }
+            }
+
+            // ---- Mis reseñas ----
+            composable(Route.MY_REVIEWS) {
+                MyReviewsScreen(items = viewModel.mias)
             }
         }
     }
 }
-
