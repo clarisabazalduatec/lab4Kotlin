@@ -9,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -18,13 +17,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import mx.tec.sabores.data.RestaurantRepository
-import mx.tec.sabores.domain.RatingSummary
 import mx.tec.sabores.ui.screens.MyReviewsScreen
-import mx.tec.sabores.ui.screens.NewReviewScreen
 import mx.tec.sabores.ui.screens.RestaurantListScreen
-import mx.tec.sabores.ui.state.NewReviewViewModel
 import mx.tec.sabores.ui.state.SaboresViewModel
+import mx.tec.sabores.ui.state.UiState
+import mx.tec.sabores.ui.components.ErrorView
+import mx.tec.sabores.ui.components.CargandoView
 
 
 @Composable
@@ -62,10 +60,17 @@ fun SaboresApp() {
             modifier = Modifier.padding(padding)
         ) {
             composable(Route.HOME) {
-                RestaurantListScreen(
-                    restaurants = viewModel.restaurantes,
-                    onRestaurantClick = { id -> nav.navigate(Route.detail(id)) }
-                )
+                when (val estado = viewModel.restaurantes) {
+                    is UiState.Cargando -> CargandoView()
+                    is UiState.Error -> ErrorView(
+                        mensaje = estado.mensaje,
+                        onReintentar = { viewModel.cargarRestaurantes() }
+                    )
+                    is UiState.Exito -> RestaurantListScreen(
+                        restaurants = estado.datos,
+                        onRestaurantClick = { id -> nav.navigate(Route.detail(id)) }
+                    )
+                }
             }
             composable(
                 route = Route.DETAIL,
@@ -90,8 +95,9 @@ fun SaboresApp() {
                 onSave = {
                     // Todavía no guarda: publicar contra el servidor es el Bloque C.
                     nav.popBackStack()
-                },
+                }
             }
         }
     }
 }
+
